@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import bcrypt from 'bcryptjs'
 const userSchema = new mongoose.Schema({
     name : {
         type : String,
@@ -9,6 +10,7 @@ const userSchema = new mongoose.Schema({
         required : true,
         unique : true ,
         lowercase : true,
+        trim : true 
     },password :{
         type : String ,
         required : true ,
@@ -17,6 +19,10 @@ const userSchema = new mongoose.Schema({
 },{
     timestamps : true 
 })
+
+userSchema.methods.matchPassword = (enteredPassword) =>{
+    return bcrypt.compare(enteredPassword,this.password)
+}
 
 const User = mongoose.model('User',userSchema)
 export default User 
