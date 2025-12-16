@@ -1,5 +1,5 @@
-#SpendWise 
+#SpendWise#
 
-###Current State 
+###Current State### 
 - Working on the backend part and currently connected to the database
   
