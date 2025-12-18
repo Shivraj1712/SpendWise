@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
 },{
     timestamps : true 
 })
-
+// Comparing passwords
 userSchema.methods.matchPassword = (enteredPassword) =>{
     return bcrypt.compare(enteredPassword,this.password)
 }
