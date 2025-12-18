@@ -13,7 +13,7 @@ const errorHandler = (error,req,res,next) =>{
     }
     res.status(statusCode).json({
         message : message ,
-        stack : process.env.NODE_DEV !== 'production' ? error.stack : null 
+        stack : process.env.NODE_DEV !== 'development' ? error.stack : null 
     })
 }
 
