@@ -8,7 +8,7 @@ import asyncHandler from "express-async-handler";
 const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
-  if (user && user.matchPassword(password)) {
+  if (user && (await user.matchPassword(password))) {
     generateToken(res, user._id);
     return res.status(200).json({
       _id: user._id,
@@ -57,7 +57,7 @@ const registerUser = asyncHandler(async (req, res) => {
 const logoutUser = asyncHandler(async (req, res) => {
   res.clearCookie("jwt", {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_DEV === "production",
     sameSite: "none",
     path: "/",
   });
@@ -73,7 +73,50 @@ const getUserProfile = asyncHandler(async (req, res) => {
     _id: req.user._id,
     name: req.user.name,
     email: req.user.email,
+    profilePic: req.user.profilePic || "",
   });
 });
 
-export { authUser, registerUser, logoutUser, getUserProfile };
+// @desc   Update User Profile
+// @route  PUT/api/user/profile
+// @access Private
+const userProfileUpdate = asyncHandler(async (req, res) => {
+  const { name, email, password, confirmPassword } = req.body;
+  if (password && password !== confirmPassword) {
+    res.status(400);
+    throw new Error("Passwords do not match!");
+  }
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+  user.name = name || user.name;
+  user.email = email || user.email;
+  if (password) {
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+  }
+  if (req.file) {
+    if (user.profilePicPublicId) {
+      await Cloudinary.uploader.destroy(user.profilePicPublicId);
+    }
+    user.profilePic = req.file.path || user.profilePic;
+    user.profilePicPublicId = req.file.filename || user.profilePicPublicId;
+  }
+  const updatedUser = await user.save();
+  res.status(200).json({
+    _id: updatedUser._id,
+    name: updatedUser.name,
+    email: updatedUser.email,
+    profilePic: updatedUser.profilePic,
+  });
+});
+
+export {
+  authUser,
+  registerUser,
+  logoutUser,
+  getUserProfile,
+  userProfileUpdate,
+};
