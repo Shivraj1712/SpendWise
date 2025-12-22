@@ -2,6 +2,9 @@ import generateToken from "../utils/generateToken.js";
 import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import asyncHandler from "express-async-handler";
+import cloudinary from "../config/cloudinary.js";
+// These functions are for the user
+
 // @desc   Authenticate a User
 // @router POST /api/user/auth
 // @access Public
@@ -99,7 +102,7 @@ const userProfileUpdate = asyncHandler(async (req, res) => {
   }
   if (req.file) {
     if (user.profilePicPublicId) {
-      await Cloudinary.uploader.destroy(user.profilePicPublicId);
+      await cloudinary.uploader.destroy(user.profilePicPublicId);
     }
     user.profilePic = req.file.path || user.profilePic;
     user.profilePicPublicId = req.file.filename || user.profilePicPublicId;
@@ -113,10 +116,65 @@ const userProfileUpdate = asyncHandler(async (req, res) => {
   });
 });
 
+// These functions are for the Admin
+
+// @desc   Get all users stat
+// @route  Get /api/admin/dashboard
+// @access Private
+const getUserStats = asyncHandler(async (req, res) => {
+  const result = await User.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalUsers: { $sum: 1 },
+      },
+    },
+  ]);
+  const count = result.length > 0 ? result[0].totalUsers : 0;
+  res.status(200).json({
+    totalUsers: count,
+  });
+});
+
+// @desc   List all users
+// @router GET /api/admin/dashboard/users
+// @access Private
+const listAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({}).select("-password");
+  if (users.length === 0) {
+    res.status(404);
+    throw new Error("No user found");
+  }
+  res.status(200).json(users);
+});
+
+// @desc   Delete a user
+// @route  POST /api/admin/
+// @access Private
+const deleteUser = asyncHandler(async (req, res) => {
+  const { userId } = req.body;
+  const user = await User.findById(userId).select("-password");
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+  if (user.profilePicPublicId) {
+    await cloudinary.uploader.destroy(user.profilePicPublicId);
+  }
+  const deletedUser = await User.findByIdAndDelete(userId);
+  res.status(200).json({
+    message: "User deleted successfully!",
+    deletedUser,
+  });
+});
+
 export {
   authUser,
   registerUser,
   logoutUser,
   getUserProfile,
   userProfileUpdate,
+  getUserStats,
+  listAllUsers,
+  deleteUser,
 };
