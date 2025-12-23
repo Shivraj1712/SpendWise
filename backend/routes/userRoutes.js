@@ -5,7 +5,8 @@ import {
   logoutUser,
   getUserProfile,
   userProfileUpdate,
-  getAllUsers,
+  getUserStats,
+  listAllUsers,
   deleteUser,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
@@ -22,7 +23,7 @@ router.get("/profile", protect, getUserProfile);
 router.put("/profile", protect, upload.single("image"), userProfileUpdate);
 
 // Admin (Private Route)
-router.get("/admin/dashboard", getAllUsers);
+router.get("/admin/dashboard");
 router.post("/admin/dashboard", deleteUser);
 
 export { router };
